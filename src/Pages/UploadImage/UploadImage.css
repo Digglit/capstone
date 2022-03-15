@@ -1,0 +1,104 @@
+
+
+.contentContainer {
+    background-color: var(--secondary-background-color);
+    margin: 10px 0px;
+    border-radius: 3px;
+    max-height: 600px;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
+    display: grid;
+    grid-template-rows: auto 125px 40px;
+    padding: 10px;
+    row-gap: 10px;
+    overflow: hidden;
+}
+
+.contentImageInputWrapper {
+    height: 100%;
+    width: calc(100% - 2px);
+    border-radius: 3px;
+    position: relative;
+}
+
+.contentImageInput {
+    height: 100%;
+    width: 100%;
+    cursor: pointer;
+    opacity: 0;
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    left: 0;
+}
+
+.contentImageInputPreview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    height: 100%;
+    width: 100%;
+    object-position: center;
+    object-fit: cover;
+    border-radius: 3px;
+}
+
+.contentImagePreviewWrapper {
+    display: grid;
+    grid-auto-flow: column;
+    width: fit-content;
+    max-width: 100%;
+    overflow: hidden;
+    overflow-x: auto;
+}
+
+.contentImagePreviewPlaceholder {
+    height: 123px;
+    width: 200px;
+    cursor: pointer;
+    background-color: var(--primary-background-color);
+    border: 1px solid rgb(124, 124, 124);
+    border-radius: 3px;
+}
+
+.contentImagePreview {
+    height: 122px;
+    width: 200px;
+    margin-left: 10px;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.contentImagePreviewSelected {
+    border: 2px solid var(--primary-color);
+}
+
+.contentImagePreview:nth-child(1) {
+    margin-left: 0px;
+}
+
+.contentFooterWrapper {
+    display: grid;
+    grid-template-columns: 50px 50px auto;
+    column-gap: 10px;
+}
+
+.contentFooterButton {
+    border: 0px;
+    border-radius: 3px;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
+    background-color: var(--secondary-background-color);
+    cursor: pointer;
+    color: var(--primary-color);
+    font-size: 18px;
+    position: relative;
+}
+
+.contentDiasbled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.contentFooterSubmitButton {
+
+}
