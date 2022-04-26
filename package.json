@@ -7,6 +7,12 @@
     "@fortawesome/free-regular-svg-icons": "^6.0.0",
     "@fortawesome/free-solid-svg-icons": "^6.0.0",
     "@fortawesome/react-fontawesome": "^0.1.17",
+    "@tensorflow-models/coco-ssd": "^2.2.2",
+    "@tensorflow/tfjs": "^3.16.0",
+    "@tensorflow/tfjs-backend-cpu": "^3.16.0",
+    "@tensorflow/tfjs-backend-webgl": "^3.16.0",
+    "@tensorflow/tfjs-converter": "^3.16.0",
+    "@tensorflow/tfjs-core": "^3.16.0",
     "@testing-library/jest-dom": "^5.16.2",
     "@testing-library/react": "^12.1.4",
     "@testing-library/user-event": "^13.5.0",
@@ -17,6 +23,7 @@
     "react-dom": "^17.0.2",
     "react-md-spinner": "^1.0.0",
     "react-scripts": "5.0.0",
+    "styled-components": "^5.3.5",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -42,5 +49,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "peerDependencies": {
+    "@tensorflow/tfjs-backend-cpu": "^3.16.0",
+    "@tensorflow/tfjs-backend-webgl": "^3.16.0",
+    "@tensorflow/tfjs-converter": "^3.16.0",
+    "@tensorflow/tfjs-core": "^3.16.0"
   }
 }

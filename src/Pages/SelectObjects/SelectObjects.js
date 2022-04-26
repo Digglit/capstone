@@ -83,7 +83,7 @@ export default class SelectObjects extends Component {
                         <button className='selectObjectsFooterButton primaryButton' onClick={this.processImages}>Continue</button>
                     :
                         <div className='spinnerContainer'>
-                            <MDSpinner singleColor="#2F9B9B" size={28}/>
+                            <MDSpinner singleColor="#3eb889" size={28}/>
                         </div>
                     }
                 </div>

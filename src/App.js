@@ -10,20 +10,30 @@ import { ref, onValue, set } from 'firebase/database'
 import { getStorage, uploadBytes, ref as imageStorageRef } from "firebase/storage";
 import SelectObjects from './Pages/SelectObjects/SelectObjects';
 import ViewResults from './Pages/ViewResults/ViewResults';
-import ProcessedImage from './Assets/OpenCVImage.png'
+import "@tensorflow/tfjs-backend-cpu";
+import * as cocoSsd from "@tensorflow-models/coco-ssd";
 
 class App extends Component {
   constructor() {
     super()
     this.state = {
-      lightMode: true,
+      lightMode: false,
       tabSelected: 1,
       imageToPreview: 0,
       fileList: [],
       shiftLeft: false,
-      resultsFileList: [ProcessedImage],
-      resultToPreview: 0
+      resultsFileList: [],
+      resultToPreview: 0,
+      isLoading: false,
+      imgData: null,
+      predictions: [],
+      displayImage: null,
+      predictionArray: [],
+      imgArray: [],
+      loadingMore: false
     }
+
+    this.imageRef = React.createRef();
   }
 
   changeTheme = () => {
@@ -42,7 +52,7 @@ class App extends Component {
 
     this.setState({lightMode: !this.state.lightMode})
   }
-  
+
   readFirebaseImages = () => {
     const imageRef = ref(database, '/images')
 		this.locationSubscription = onValue(imageRef, (snapshot) => {
@@ -81,7 +91,7 @@ class App extends Component {
   }
 
   selectImage = (index) => {
-    this.setState({imageToPreview: index})
+    this.setState({imageToPreview: index, predictions: this.state.predictionArray[index], imgData: this.state.imgArray[index]})
   }
 
   selectResultImage = (index) => {
@@ -104,6 +114,125 @@ class App extends Component {
     }
   }
 
+  normalizePredictions = (predictions, imgSize) => {
+    if (!predictions || !imgSize || !this.imageRef) return predictions || []
+    return predictions.map((prediction) => {
+      const { bbox } = prediction
+      const oldX = bbox[0]
+      const oldY = bbox[1]
+      const oldWidth = bbox[2]
+      const oldHeight = bbox[3]
+
+      const imgWidth = this.imageRef.current.width
+      const imgHeight = this.imageRef.current.height
+
+      const x = (oldX * imgWidth) / imgSize.width
+      const y = (oldY * imgHeight) / imgSize.height
+      const width = (oldWidth * imgWidth) / imgSize.width
+      const height = (oldHeight * imgHeight) / imgSize.height
+
+      return { ...prediction, bbox: [x, y, width, height] }
+    })
+  }
+
+  detectObjectsOnImage = async (imageElement, imgSize, updateMainImage, isLastImage) => {
+    const model = await cocoSsd.load({})
+    const predictions = await model.detect(imageElement, 6)
+    const normalizedPredictions = this.normalizePredictions(predictions, imgSize)
+    let predictionArray = [...this.state.predictionArray]
+    predictionArray.push(normalizedPredictions)
+    if (updateMainImage) {
+      this.setState({predictions: predictionArray[0], predictionArray, imgData: this.state.imgArray[0], imageToPreview: 0})
+    } else {
+      this.setState({predictionArray})
+    }
+    if (isLastImage) {
+      this.setState({loadingMore: false})
+    }
+    console.log("Predictions: ", predictions)
+  }
+
+  readImage = (file) => {
+    return new Promise((rs, rj) => {
+      const fileReader = new FileReader()
+      fileReader.onload = () => rs(fileReader.result)
+      fileReader.onerror = () => rj(fileReader.error)
+      fileReader.readAsDataURL(file)
+    })
+  }
+
+  onSelectImage = async (e, triggerLoading = true) => {
+    if (e.target.files?.length === 0 || !e.target.files) {
+      return false
+    }
+
+    if (triggerLoading)
+      this.setState({isLoading: true})
+
+    if (e.target.files?.length > 1) {
+      this.setState({loadingMore: true})
+      let imgArray = [...this.state.imgArray]
+      for (let i = 0; i < e.target.files.length; ++i) {
+        const file = e.target.files[i]
+        const imgData = await this.readImage(file)
+        imgArray.push(imgData)
+        if (i === e.target.files.length - 1) {
+          if (this.state.imgArray.length > 0) {
+            this.setState({imgArray})
+          } else {
+            this.setState({imgData: imgArray[0], imgArray})
+          }
+        }
+    
+        const imageElement = document.createElement("img")
+        imageElement.src = imgData
+    
+        imageElement.onload = async () => {
+          const imgSize = {
+            width: imageElement.width,
+            height: imageElement.height,
+          }
+          await this.detectObjectsOnImage(imageElement, imgSize, i === 0 ? true : false, i === e.target.files.length - 1 ? true : false)
+          this.setState({isLoading: false})
+        }
+      }
+    } else if (e.target.files?.length === 1) {
+      this.setState({loadingMore: true})
+      let imgArray = [...this.state.imgArray]
+      const file = e.target.files[0]
+      const imgData = await this.readImage(file)
+      imgArray.push(imgData)
+      this.setState({imgData: imgArray[0], imgArray})
+  
+      const imageElement = document.createElement("img")
+      imageElement.src = imgData
+  
+      imageElement.onload = async () => {
+        const imgSize = {
+          width: imageElement.width,
+          height: imageElement.height,
+        }
+        await this.detectObjectsOnImage(imageElement, imgSize, true, true)
+        this.setState({isLoading: false})
+      }
+    }
+  }
+
+  deleteImages = () => {
+    this.setState({
+      imgData: null,
+      predictions: [],
+      displayImage: null,
+      predictionArray: [],
+      imgArray: [],
+      imageToPreview: 0
+    })
+  }
+
+  addImages = () => {
+    
+  }
+
   render() {
     return (
       <div className="App">
@@ -112,21 +241,30 @@ class App extends Component {
           <button className='headerThemeButton' onClick={this.changeTheme}><FontAwesomeIcon className='headerThemeIcon' icon={this.state.lightMode ? solid('moon') : solid('sun')} /></button>
         </div>
         <div className='applicationBodyWrapper'>
-          <nav className='navbarContainer'>
+          {/* <nav className='navbarContainer'>
             <a className={`navbarLink ${this.state.tabSelected === 1 ? 'navbarLinkSelected' : this.state.tabSelected > 1 ? 'navbarLinkComplete' : 'navbarLinkIncomplete'}`} onClick={() => this.changeTab(1)}>Upload Images</a>
             <a className={`navbarLink ${this.state.tabSelected === 2 ? 'navbarLinkSelected' : this.state.tabSelected > 2 ? 'navbarLinkComplete' : 'navbarLinkIncomplete'}`} onClick={() => this.changeTab(2)}>Select Objects</a>
             <a className={`navbarLink ${this.state.tabSelected === 3 ? 'navbarLinkSelected' : this.state.tabSelected > 3 ? 'navbarLinkComplete' : 'navbarLinkIncomplete'}`} onClick={() => this.changeTab(3)}>View Results</a>
-          </nav>
+          </nav> */}
           <AnimatePresence exitBeforeEnter>
             { this.state.tabSelected === 1 ?
               <UploadImage
                 key={'UploadImage'}
                 fileList={this.state.fileList}
                 imageToPreview={this.state.imageToPreview}
+                displayImage={this.state.imgData}
                 selectImage={this.selectImage}
                 movePreviewImage={this.movePreviewImage}
                 changeTab={this.changeTab}
-                saveImage={this.saveImage}
+                saveImage={this.onSelectImage}
+                imageRef={this.imageRef}
+                predictions={this.state.predictions}
+                predictionArray={this.state.predictionArray}
+                imgArray={this.state.imgArray}
+                isLoading={this.state.isLoading}
+                loadingMore={this.state.loadingMore}
+                deleteImages={this.deleteImages}
+                addImages={(e) => this.onSelectImage(e, false)}
               />
             : this.state.tabSelected === 2 ?
               <SelectObjects
